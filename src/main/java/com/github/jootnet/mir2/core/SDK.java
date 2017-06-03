@@ -17,7 +17,7 @@
 package com.github.jootnet.mir2.core;
 
 /**
- * SDK基础函数与敞亮
+ * SDK基础函数与常亮
  * 
  * @author johness
  */
