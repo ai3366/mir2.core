@@ -14,21 +14,23 @@
  * 
  * Support: https://jootnet.github.io
  */
-package com.github.jootnet.mir2.core;
+package com.github.jootnet.mir2.core.image;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.zip.InflaterInputStream;
+
+import com.github.jootnet.mir2.core.BinaryReader;
+import com.github.jootnet.mir2.core.SDK;
 
 /**
  * 热血传奇2WZL图片库
  * 
  * @author johness
  */
-final class WZL implements Closeable {
+final class WZL implements ImageLibrary {
 
 	private int imageCount;
 	/**
@@ -103,43 +105,6 @@ final class WZL implements Closeable {
 			throw new RuntimeException(e);
 		}
     }
-    
-    /**
-     * 获取WZL中一张图片
-     * 
-     * @param index
-     * 		图片索引
-     * @return 图片数据
-     */
-    Texture get(int index) {
-    	try{
-    		ImageInfo ii = imageInfos[index];
-    		if(ii.getWidth() == 0 && ii.getHeight() == 0) return Texture.EMPTY;
-    		int offset = offsetList[index];
-    		int length = lengthList[index];
-    		byte[] pixels = new byte[length];
-    		br_wzl.seek(offset + 16);
-    		br_wzl.read(pixels);
-    		pixels = unzip(pixels);
-    		byte[] sRGB = new byte[ii.getWidth() * ii.getHeight() * 3];
-    		int p_index = 0;
-    		for(int h = ii.getHeight() - 1; h >= 0 ; --h)
-    			for(int w = 0; w < ii.getWidth(); ++w) {
-    				// 跳过填充字节
-    				if(w == 0)
-    					p_index += SDK.skipBytes(8, ii.getWidth());
-    				byte[] pallete = SDK.palletes[pixels[p_index++] & 0xff];
-					int _idx = (w + h * ii.getWidth()) * 3;
-					sRGB[_idx] = pallete[1];
-					sRGB[_idx + 1] = pallete[2];
-					sRGB[_idx + 2] = pallete[3];
-    			}
-	    	return new Texture(sRGB, ii.getWidth(), ii.getHeight());
-    	} catch(Exception ex) {
-    		ex.printStackTrace();
-    		return Texture.EMPTY;
-    	}
-    }
 
     /** 从zlib解压 */
 	private static byte[] unzip(byte[] ziped) {
@@ -173,6 +138,44 @@ final class WZL implements Closeable {
 				br_wzl.close();
             }
 		}
+	}
+
+	public final Texture tex(int index) {
+		if(index < 0) return Texture.EMPTY;
+		if(index >= imageCount) return Texture.EMPTY;
+    	try{
+    		ImageInfo ii = imageInfos[index];
+    		if(ii.getWidth() == 0 && ii.getHeight() == 0) return Texture.EMPTY;
+    		int offset = offsetList[index];
+    		int length = lengthList[index];
+    		byte[] pixels = new byte[length];
+    		br_wzl.seek(offset + 16);
+    		br_wzl.read(pixels);
+    		pixels = unzip(pixels);
+    		byte[] sRGB = new byte[ii.getWidth() * ii.getHeight() * 3];
+    		int p_index = 0;
+    		for(int h = ii.getHeight() - 1; h >= 0 ; --h)
+    			for(int w = 0; w < ii.getWidth(); ++w) {
+    				// 跳过填充字节
+    				if(w == 0)
+    					p_index += SDK.skipBytes(8, ii.getWidth());
+    				byte[] pallete = SDK.palletes[pixels[p_index++] & 0xff];
+					int _idx = (w + h * ii.getWidth()) * 3;
+					sRGB[_idx] = pallete[1];
+					sRGB[_idx + 1] = pallete[2];
+					sRGB[_idx + 2] = pallete[3];
+    			}
+	    	return new Texture(sRGB, ii.getWidth(), ii.getHeight());
+    	} catch(Exception ex) {
+    		ex.printStackTrace();
+    		return Texture.EMPTY;
+    	}
+    }
+
+	public final ImageInfo info(int index) {
+		if(index < 0) return ImageInfo.EMPTY;
+		if(index >= imageCount) return ImageInfo.EMPTY;
+		return imageInfos[index];
 	}
 
 }

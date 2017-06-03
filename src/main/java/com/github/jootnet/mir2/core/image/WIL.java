@@ -14,20 +14,22 @@
  * 
  * Support: https://jootnet.github.io
  */
-package com.github.jootnet.mir2.core;
+package com.github.jootnet.mir2.core.image;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import com.github.jootnet.mir2.core.BinaryReader;
+import com.github.jootnet.mir2.core.SDK;
 
 /**
  * 热血传奇2WIL图片库
  * 
  * @author johness
  */
-final class WIL implements Closeable {
+final class WIL implements ImageLibrary {
 
 	private int imageCount;
 	/**
@@ -111,15 +113,25 @@ final class WIL implements Closeable {
 			throw new RuntimeException(e);
 		}
     }
-    
+
     /**
-     * 获取WIL中一张图片
-     * 
-     * @param index
-     * 		图片索引
-     * @return 图片数据
+     * 关闭WIL对象，释放其引用的文件流以及内存占用
      */
-    Texture get(int index) {
+	public final void close() throws IOException {
+		synchronized (wil_locker) {
+			offsetList = null;
+            imageInfos = null;
+            loaded = false;
+			if (br_wil != null)
+            {
+				br_wil.close();
+            }
+		}
+	}
+
+	public final Texture tex(int index) {
+		if(index < 0) return Texture.EMPTY;
+		if(index >= imageCount) return Texture.EMPTY;
     	try{
 	    	ImageInfo ii = imageInfos[index];
 	    	byte[] pixels = null;
@@ -175,18 +187,9 @@ final class WIL implements Closeable {
     	}
     }
 
-    /**
-     * 关闭WIL对象，释放其引用的文件流以及内存占用
-     */
-	public final void close() throws IOException {
-		synchronized (wil_locker) {
-			offsetList = null;
-            imageInfos = null;
-            loaded = false;
-			if (br_wil != null)
-            {
-				br_wil.close();
-            }
-		}
+	public final ImageInfo info(int index) {
+		if(index < 0) return ImageInfo.EMPTY;
+		if(index >= imageCount) return ImageInfo.EMPTY;
+		return imageInfos[index];
 	}
 }

@@ -14,21 +14,23 @@
  * 
  * Support: https://jootnet.github.io
  */
-package com.github.jootnet.mir2.core;
+package com.github.jootnet.mir2.core.image;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.github.jootnet.mir2.core.BinaryReader;
+import com.github.jootnet.mir2.core.SDK;
+
 /**
  * 热血传奇2WIS图片库
  * 
  * @author johness
  */
-final class WIS implements Closeable {
+final class WIS implements ImageLibrary {
 
 	private int imageCount;
 	/**
@@ -119,54 +121,7 @@ final class WIS implements Closeable {
 			throw new RuntimeException(e);
 		}
     }
-    
-    /**
-     * 获取WIS中一张图片
-     * 
-     * @param index
-     * 		图片索引
-     * @return 图片数据
-     */
-    Texture get(int index) {
-    	try{
-    		ImageInfo ii = imageInfos[index];
-    		int offset = offsetList[index];
-    		int length = lengthList[index];
-    		if(length < 14) {
-    			// 如果是空白图片
-    			return Texture.EMPTY;
-    		}
-    		// 是否压缩(RLE)
-    		br_wis.seek(offset);
-    		byte encry = br_wis.readByte();
-    		br_wis.skipBytes(11);
-    		byte[] imageBytes = new byte[ii.getWidth() * ii.getHeight()];
-    		if(encry == 1) {
-    			// 压缩了
-    			byte[] packed = new byte[length - 12];
-    			br_wis.read(packed);
-    			imageBytes = unpack(packed, imageBytes.length);
-    		} else {
-    			// 没压缩
-    			br_wis.read(imageBytes);
-    		}
-    		byte[] sRGB = new byte[ii.getWidth() * ii.getHeight() * 3];
-    		int index1 = 0;
-    		for(int h = 0; h < ii.getHeight(); ++h)
-    			for(int w = 0; w < ii.getWidth(); ++w) {
-    				byte[] pallete = SDK.palletes[imageBytes[index1++] & 0xff];
-					int _idx = (w + h * ii.getWidth()) * 3;
-					sRGB[_idx] = pallete[1];
-					sRGB[_idx + 1] = pallete[2];
-					sRGB[_idx + 2] = pallete[3];
-    			}
-	    	return new Texture(sRGB, ii.getWidth(), ii.getHeight());
-    	} catch(Exception ex) {
-    		ex.printStackTrace();
-    		return Texture.EMPTY;
-    	}
-    }
-    
+        
     /**
 	 * 解压数据
 	 * @param packed 压缩的数据
@@ -221,6 +176,54 @@ final class WIS implements Closeable {
 				br_wis.close();
             }
 		}
+	}
+
+	public final Texture tex(int index) {
+		if(index < 0) return Texture.EMPTY;
+		if(index >= imageCount) return Texture.EMPTY;
+    	try{
+    		ImageInfo ii = imageInfos[index];
+    		int offset = offsetList[index];
+    		int length = lengthList[index];
+    		if(length < 14) {
+    			// 如果是空白图片
+    			return Texture.EMPTY;
+    		}
+    		// 是否压缩(RLE)
+    		br_wis.seek(offset);
+    		byte encry = br_wis.readByte();
+    		br_wis.skipBytes(11);
+    		byte[] imageBytes = new byte[ii.getWidth() * ii.getHeight()];
+    		if(encry == 1) {
+    			// 压缩了
+    			byte[] packed = new byte[length - 12];
+    			br_wis.read(packed);
+    			imageBytes = unpack(packed, imageBytes.length);
+    		} else {
+    			// 没压缩
+    			br_wis.read(imageBytes);
+    		}
+    		byte[] sRGB = new byte[ii.getWidth() * ii.getHeight() * 3];
+    		int index1 = 0;
+    		for(int h = 0; h < ii.getHeight(); ++h)
+    			for(int w = 0; w < ii.getWidth(); ++w) {
+    				byte[] pallete = SDK.palletes[imageBytes[index1++] & 0xff];
+					int _idx = (w + h * ii.getWidth()) * 3;
+					sRGB[_idx] = pallete[1];
+					sRGB[_idx + 1] = pallete[2];
+					sRGB[_idx + 2] = pallete[3];
+    			}
+	    	return new Texture(sRGB, ii.getWidth(), ii.getHeight());
+    	} catch(Exception ex) {
+    		ex.printStackTrace();
+    		return Texture.EMPTY;
+    	}
+    }
+
+	public final ImageInfo info(int index) {
+		if(index < 0) return ImageInfo.EMPTY;
+		if(index >= imageCount) return ImageInfo.EMPTY;
+		return imageInfos[index];
 	}
 
 }
