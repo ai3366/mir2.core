@@ -23,6 +23,7 @@ import java.nio.ByteOrder;
 
 import com.github.jootnet.mir2.core.BinaryReader;
 import com.github.jootnet.mir2.core.SDK;
+import com.github.jootnet.mir2.core.Texture;
 
 /**
  * 热血传奇2WIL图片库

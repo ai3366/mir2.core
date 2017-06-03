@@ -14,7 +14,7 @@
  * 
  * Support: https://jootnet.github.io
  */
-package com.github.jootnet.mir2.core.image;
+package com.github.jootnet.mir2.core;
 
 import java.awt.Transparency;
 import java.awt.color.ColorSpace;

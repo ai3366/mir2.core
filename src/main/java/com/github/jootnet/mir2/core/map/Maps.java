@@ -51,6 +51,7 @@ public final class Maps {
 				ret.setWidth(br_map.readShortLE());
 				ret.setHeight(br_map.readShortLE());
 				br_map.skipBytes(48);
+				boolean newMapFlag = br_map.length() == ret.getWidth() * ret.getHeight() * 14 + 52; // 新版地图每一个Tile占用14个字节，最后的两个字节作用未知
 				MapTileInfo[][] mapTileInfos = new MapTileInfo[ret.getWidth()][ret.getHeight()];
 				for (int width = 0; width < ret.getWidth(); ++width)
 					for (int height = 0; height < ret.getHeight(); ++height) {
@@ -104,6 +105,8 @@ public final class Maps {
 						mi.setObjFileIdx(br_map.readByte());
 						// 读取光照(第12个byte)
 						mi.setLight(br_map.readByte());
+						if(newMapFlag)
+							br_map.skipBytes(2);
 						if (width % 2 != 0 || height % 2 != 0)
 							mi.setHasBng(false);
 						mapTileInfos[width][height] = mi;
