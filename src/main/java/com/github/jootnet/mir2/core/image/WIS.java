@@ -180,6 +180,7 @@ final class WIS implements ImageLibrary {
 	}
 
 	public final Texture tex(int index) {
+		if(!loaded) return Texture.EMPTY;
 		if(index < 0) return Texture.EMPTY;
 		if(index >= imageCount) return Texture.EMPTY;
     	try{
@@ -190,20 +191,25 @@ final class WIS implements ImageLibrary {
     			// 如果是空白图片
     			return Texture.EMPTY;
     		}
-    		// 是否压缩(RLE)
-    		br_wis.seek(offset);
-    		byte encry = br_wis.readByte();
-    		br_wis.skipBytes(11);
     		byte[] imageBytes = new byte[ii.getWidth() * ii.getHeight()];
-    		if(encry == 1) {
-    			// 压缩了
-    			byte[] packed = new byte[length - 12];
-    			br_wis.read(packed);
+    		byte[] packed = null;
+    		byte encry = 0;
+    		synchronized (wis_locker) {
+        		// 是否压缩(RLE)
+        		br_wis.seek(offset);
+        		encry = br_wis.readByte();
+        		br_wis.skipBytes(11);
+        		if(encry == 1) {
+        			// 压缩了
+        			packed = new byte[length - 12];
+        			br_wis.read(packed);
+        		} else {
+        			// 没压缩
+        			br_wis.read(imageBytes);
+        		}
+			}
+    		if(encry == 1)
     			imageBytes = unpack(packed, imageBytes.length);
-    		} else {
-    			// 没压缩
-    			br_wis.read(imageBytes);
-    		}
     		byte[] sRGB = new byte[ii.getWidth() * ii.getHeight() * 3];
     		int index1 = 0;
     		for(int h = 0; h < ii.getHeight(); ++h)
@@ -222,6 +228,7 @@ final class WIS implements ImageLibrary {
     }
 
 	public final ImageInfo info(int index) {
+		if(!loaded) return ImageInfo.EMPTY;
 		if(index < 0) return ImageInfo.EMPTY;
 		if(index >= imageCount) return ImageInfo.EMPTY;
 		return imageInfos[index];

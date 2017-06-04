@@ -64,6 +64,7 @@ public final class SDK {
     
     /**
      * 获取指定文件路径名后缀<br>
+     * 返回的字符串都是大写形式<br>
      * 如果指定文件路径没有后缀，则返回空字符串
      * 
      * @param fileName

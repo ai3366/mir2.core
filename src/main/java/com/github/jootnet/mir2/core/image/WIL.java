@@ -131,6 +131,7 @@ final class WIL implements ImageLibrary {
 	}
 
 	public final Texture tex(int index) {
+		if(!loaded) return Texture.EMPTY;
 		if(index < 0) return Texture.EMPTY;
 		if(index >= imageCount) return Texture.EMPTY;
     	try{
@@ -189,6 +190,7 @@ final class WIL implements ImageLibrary {
     }
 
 	public final ImageInfo info(int index) {
+		if(!loaded) return ImageInfo.EMPTY;
 		if(index < 0) return ImageInfo.EMPTY;
 		if(index >= imageCount) return ImageInfo.EMPTY;
 		return imageInfos[index];

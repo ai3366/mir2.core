@@ -26,7 +26,7 @@ import com.github.jootnet.mir2.core.SDK;
  * 
  * @author johness
  */
-public final class Images {
+public final class ImageLibraries {
 
 	private static Map<String, ImageLibrary> libraries = new HashMap<String, ImageLibrary>();
 	private static Object lib_locker = new Object();

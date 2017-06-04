@@ -142,6 +142,7 @@ final class WZL implements ImageLibrary {
 	}
 
 	public final Texture tex(int index) {
+		if(!loaded) return Texture.EMPTY;
 		if(index < 0) return Texture.EMPTY;
 		if(index >= imageCount) return Texture.EMPTY;
     	try{
@@ -150,8 +151,10 @@ final class WZL implements ImageLibrary {
     		int offset = offsetList[index];
     		int length = lengthList[index];
     		byte[] pixels = new byte[length];
-    		br_wzl.seek(offset + 16);
-    		br_wzl.read(pixels);
+    		synchronized (wzl_locker) {
+        		br_wzl.seek(offset + 16);
+        		br_wzl.read(pixels);
+			}
     		pixels = unzip(pixels);
     		byte[] sRGB = new byte[ii.getWidth() * ii.getHeight() * 3];
     		int p_index = 0;
@@ -174,6 +177,7 @@ final class WZL implements ImageLibrary {
     }
 
 	public final ImageInfo info(int index) {
+		if(!loaded) return ImageInfo.EMPTY;
 		if(index < 0) return ImageInfo.EMPTY;
 		if(index >= imageCount) return ImageInfo.EMPTY;
 		return imageInfos[index];
