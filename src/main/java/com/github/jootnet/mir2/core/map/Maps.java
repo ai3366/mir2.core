@@ -22,7 +22,20 @@ import java.util.HashMap;
 import com.github.jootnet.mir2.core.BinaryReader;
 
 /**
- * 地图管理类
+ * 地图管理类<br>
+ * 地图文件头以Delphi语言描述如下<br>
+ * <pre>
+ * TMapHeader = packed record
+    wWidth      :Word;                 	//宽度			2
+    wHeight     :Word;                 	//高度			2
+    sTitle      :String[15]; 			//标题			16
+    UpdateDate  :TDateTime;          	//更新日期			8
+    VerFlag     :Byte;					//标识(新的格式为02)	1
+    Reserved    :array[0..22] of Char;  //保留			23
+  end;
+ * </pre>
+ * 十周年之后的版本可能出现新版本地图，3KM2中式20110428加入的对新版地图的支持<br>
+ * 不过除了问陈天桥之外暂时不能知道新版地图中最后两个字节是干嘛用的
  * 
  * @author johness
  */
@@ -50,8 +63,9 @@ public final class Maps {
 				Map ret = new Map();
 				ret.setWidth(br_map.readShortLE());
 				ret.setHeight(br_map.readShortLE());
-				br_map.skipBytes(48);
-				boolean newMapFlag = br_map.length() == ret.getWidth() * ret.getHeight() * 14 + 52; // 新版地图每一个Tile占用14个字节，最后的两个字节作用未知
+				br_map.skipBytes(28);
+				boolean newMapFlag = br_map.readByte() == 2; // 新版地图每一个Tile占用14个字节，最后的两个字节作用未知
+				br_map.skipBytes(23);
 				MapTileInfo[][] mapTileInfos = new MapTileInfo[ret.getWidth()][ret.getHeight()];
 				for (int width = 0; width < ret.getWidth(); ++width)
 					for (int height = 0; height < ret.getHeight(); ++height) {
