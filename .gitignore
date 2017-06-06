@@ -15,5 +15,7 @@ buildNumber.properties
 .settings
 .classpath
 .project
+
+# idea proj files
 .idea/
 mir2.core.iml
