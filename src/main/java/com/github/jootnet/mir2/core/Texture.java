@@ -49,14 +49,12 @@ public final class Texture implements Cloneable {
 	private byte[] pixels;
 	private int width;
 	private int height;
+	private volatile boolean dirty;
 	
 	private boolean emptyHoldFlag;
 	private static byte[] emptyPixels;
 	private static long clearCount;
 	private static Object clear_locker = new Object();
-	private boolean bufferedImageHoldFlag;
-	private BufferedImage bufferedImage;
-	private boolean dirty = true; // 先将此值置为true，第一次转换为BufferedImage时才能正确处理
 	private Object proc_locker = new Object();
 	
 	/**
@@ -73,7 +71,7 @@ public final class Texture implements Cloneable {
 	 * @throws IllegalArgumentException 传入的像素数据长度不符合要求
 	 */
 	public Texture(byte[] sRGB, int width, int height) throws IllegalArgumentException {
-		this(sRGB, width, height, true, true);
+		this(sRGB, width, height, true);
 	}
 	
 	/**
@@ -88,20 +86,16 @@ public final class Texture implements Cloneable {
 	 * 		图片高度
 	 * @param emptyHoldFlag
 	 * 		是否存储一个空的字节数组，用于在将图片清空时快速反应
-	 * @param bufferedImageHoldFlag
-	 * 		是否存储一个{@link BufferedImage}对象，用于在请求图片数据转换时快速反映<br>
-	 * 		此值建议为true，当为false时会每次重新创建BufferedImage，而会浪费效率
 	 * 
 	 * @throws IllegalArgumentException 传入的像素数据长度不符合要求
 	 */
-	public Texture(byte[] sRGB, int width, int height, boolean emptyHoldFlag, boolean bufferedImageHoldFlag) throws IllegalArgumentException {
+	public Texture(byte[] sRGB, int width, int height, boolean emptyHoldFlag) throws IllegalArgumentException {
 		if(sRGB != null && width > 0 && height > 0 && sRGB.length != (width * height * 3))
 			throw new IllegalArgumentException("sRGB length not match width * height * 3 !!!");
 		this.pixels = sRGB;
 		this.width = width;
 		this.height = height;
 		this.emptyHoldFlag = emptyHoldFlag;
-		this.bufferedImageHoldFlag = bufferedImageHoldFlag;
 	}
 	
 	/**
@@ -111,6 +105,22 @@ public final class Texture implements Cloneable {
 	 */
 	public final boolean empty() {
 		return this == EMPTY || pixels == null || pixels.length == 0 || width < 1 || height < 1;
+	}
+	
+	/**
+	 * 判断当前图片是否被修改过<br>
+	 * 当前函数返回之后，图片会被置为未修改，即下次调用会返回false<br>
+	 * 一般与{@link #toBufferedImage(boolean)}配合使用，判定时机
+	 * 
+	 * @return 上次调用此函数之后图片是否被修改过
+	 * @see #toBufferedImage(boolean)
+	 */
+	public final boolean dirty() {
+		synchronized (proc_locker) {
+			boolean _dirty = dirty;
+			dirty = false;
+			return _dirty;
+		}
 	}
 	
 	protected void finalize() {
@@ -187,33 +197,81 @@ public final class Texture implements Cloneable {
 	}
 	
 	/**
-	 * 将图片数据转换为{@link BufferedImage}对象
+	 * 将图片数据转换为{@link BufferedImage}对象<br>
+	 * 默认不支持Alpha通道，因为从图像算法角度讲是没有“透明色”概念的，只有在两张图片叠加时才有意义<br>
+	 * 如果需要在图片中将特定颜色置为透明，则使用{@link #toBufferedImageTransparent(byte, byte, byte)}
+	 * 
+	 * @param disaposable
+	 * 		结果是否是一次性的<br>
+	 * 		当此值只为false时返回结果中的BufferedImage中图片数据是与当前对象使用同一个字节数组<br>
+	 * 		对当前对象的任何操作都会影响到函数返回的图片展示，甚至可能在多线程中出现图片撕裂<br>
+	 * 		因此，除非你认为自己头脑是清晰的，否则请传递true<br>
+	 * 		理论上，传递false的函数调用，调用一次和多次效果都是一样的，传递true的调用则需要通过{@link #dirty()}进行时机判断
 	 * 
 	 * @return 图片数据对应的{@link BufferedImage}对象
+	 * 
+	 * @see #toBufferedImageTransparent(byte, byte, byte)
+	 * @see #dirty()
+	 * @see DataBufferByte
 	 */
-	public final BufferedImage toBufferedImage() {
+	public final BufferedImage toBufferedImage(boolean disaposable) {
 		if(empty())
 			return EMPTY_BUFFEREDIMAGE;
 		synchronized (proc_locker) {
-			BufferedImage bi = null;
-			if(!bufferedImageHoldFlag || dirty) {
-				// 将byte[]转为DataBufferByte用于后续创建BufferedImage对象
-		        DataBufferByte dataBuffer = new DataBufferByte(pixels, pixels.length);
-		        // sRGB色彩空间对象
-		        ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-		        int[] nBits = {8, 8, 8};
-		        int[] bOffs = {0, 1, 2};
-		        ComponentColorModel colorModel = new ComponentColorModel(cs, nBits, false, false,
-		                                             Transparency.OPAQUE,
-		                                             DataBuffer.TYPE_BYTE);        
-		        WritableRaster raster = Raster.createInterleavedRaster(dataBuffer, width, height, width*3, 3, bOffs, null);
-		        bi = new BufferedImage(colorModel,raster,false,null);
+			byte[] _pixels = null;
+			if(!disaposable) {
+				_pixels = pixels;
+			} else {
+				_pixels = new byte[pixels.length];
+				System.arraycopy(pixels, 0, _pixels, 0, pixels.length);
 			}
-			if(bufferedImageHoldFlag) {
-				if(dirty)
-					bufferedImage = bi;
-				dirty = false;
-				return bufferedImage;
+			// 将byte[]转为DataBufferByte用于后续创建BufferedImage对象
+	        DataBufferByte dataBuffer = new DataBufferByte(_pixels, pixels.length);
+	        // sRGB色彩空间对象
+	        ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+	        int[] nBits = {8, 8, 8};
+	        int[] bOffs = {0, 1, 2};
+	        ComponentColorModel colorModel = new ComponentColorModel(cs, nBits, false, false,
+	                                             Transparency.OPAQUE,
+	                                             DataBuffer.TYPE_BYTE);        
+	        WritableRaster raster = Raster.createInterleavedRaster(dataBuffer, width, height, width*3, 3, bOffs, null);
+	        return new BufferedImage(colorModel,raster,false,null);
+		}
+	}
+	
+	/**
+	 * 将图片数据转换为{@link BufferedImage}对象<br>
+	 * 如果不需要设置透明色，则使用{@link #toBufferedImage(boolean)}<br>
+	 * 此函数不会将返回值存入缓存，是一次性的
+	 * 
+	 * @param r
+	 * 		透明色R分量
+	 * @param g
+	 * 		透明色G分量
+	 * @param b
+	 * 		透明色B分量
+	 * @return 将指定颜色置为透明色的BufferedImage
+	 * 
+	 * @see #toBufferedImage(boolean)
+	 */
+	public final BufferedImage toBufferedImageTransparent(byte r, byte g, byte b) {
+		if(empty())
+			return EMPTY_BUFFEREDIMAGE;
+		synchronized (proc_locker) {
+			BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+			DataBufferByte dataBuffer = (DataBufferByte)bi.getRaster().getDataBuffer();
+			byte[][] _pixels = dataBuffer.getBankData();
+			for(int h = 0; h < height; ++h) {
+				for(int w = 0; w < width; ++w) {
+					byte _r = pixels[(w + h * width) * 3];
+					byte _g = pixels[(w + h * width) * 3];
+					byte _b = pixels[(w + h * width) * 3];
+					byte _a = _r == r && _g == g && _b == b ? 0 : (byte)255;
+					_pixels[w * h][0] = _a;
+					_pixels[w * h][1] = _b;
+					_pixels[w * h][2] = _g;
+					_pixels[w * h][3] = _r;
+				}
 			}
 			return bi;
 		}
@@ -538,7 +596,7 @@ public final class Texture implements Cloneable {
 					pixels[_idx_this + 2] = (byte) ((b < 128) ? (2 * pixels[_idx_this + 2] * b / 255) : (255 - 2 * (255 - pixels[_idx_this + 2]) * (255 - b) / 255));
 				}
 			}
-			dirty = true;
 		}
+		dirty = true;
 	}
 }

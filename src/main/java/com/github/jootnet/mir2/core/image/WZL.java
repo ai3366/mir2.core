@@ -73,9 +73,16 @@ final class WZL implements ImageLibrary {
     
     WZL(String wzlPath) {
     	String wzxPath = SDK.changeFileExtension(wzlPath, "wzx");
-    	if(!new File(wzxPath).exists()) return;
+		File f_wzx = new File(wzxPath);
+		if(!f_wzx.exists()) return;
+		if(!f_wzx.isFile()) return;
+		if(!f_wzx.canRead()) return;
+		File f_wzl = new File(wzlPath);
+		if(!f_wzl.exists()) return;
+		if(!f_wzl.isFile()) return;
+		if(!f_wzl.canRead()) return;
     	try {
-    		BinaryReader br_wzx = new BinaryReader(new File(wzxPath), "r");
+    		BinaryReader br_wzx = new BinaryReader(f_wzx, "r");
     		br_wzx.skipBytes(44); // 跳过标题
     		imageCount = br_wzx.readIntLE();
 			offsetList = new int[imageCount];
@@ -85,7 +92,7 @@ final class WZL implements ImageLibrary {
 				offsetList[i] = br_wzx.readIntLE();
 			}
 			br_wzx.close();
-			br_wzl = new BinaryReader(new File(wzlPath), "r");
+			br_wzl = new BinaryReader(f_wzl, "r");
 			imageInfos = new ImageInfo[imageCount];
             lengthList = new int[imageCount];
             for (int i = 0; i < imageCount; ++i)

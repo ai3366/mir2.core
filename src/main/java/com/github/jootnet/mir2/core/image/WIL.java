@@ -58,7 +58,7 @@ final class WIL implements ImageLibrary {
 	}
 	/* WIL文件随机读取对象 */
 	private BinaryReader br_wil;
-	private boolean loaded;
+	private volatile boolean loaded;
 	/**
 	 * 获取库加载状态
 	 * 
@@ -72,10 +72,17 @@ final class WIL implements ImageLibrary {
     
     WIL(String wilPath) {
     	String wixPath = SDK.changeFileExtension(wilPath, "wix");
-    	if(!new File(wixPath).exists()) return;
+		File f_wix = new File(wixPath);
+		if(!f_wix.exists()) return;
+		if(!f_wix.isFile()) return;
+		if(!f_wix.canRead()) return;
+		File f_wil = new File(wilPath);
+		if(!f_wil.exists()) return;
+		if(!f_wil.isFile()) return;
+		if(!f_wil.canRead()) return;
     	try {
-    		BinaryReader br_wix = new BinaryReader(new File(wixPath), "r");
-			br_wil = new BinaryReader(new File(wilPath), "r");
+    		BinaryReader br_wix = new BinaryReader(f_wix, "r");
+			br_wil = new BinaryReader(f_wil, "r");
 			br_wix.skipBytes(44); // 跳过标题
 			int indexCount = br_wix.readIntLE(); // 索引数量(也是图片数量)
 			if(verFlag != 0)
@@ -149,7 +156,7 @@ final class WIL implements ImageLibrary {
             {
                 int p_index = 0;
                 for (int h = ii.getHeight() - 1; h >= 0; --h)
-                    for (int w = 0; w < ii.getHeight(); ++w)
+                    for (int w = 0; w < ii.getWidth(); ++w)
                     {
                         // 跳过填充字节
                         if (w == 0)
