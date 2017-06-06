@@ -2,8 +2,11 @@ package com.github.jootnet.imageviewer.controller;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
 
 import java.io.File;
@@ -15,6 +18,13 @@ public class MainController {
 
     @FXML
     BorderPane borderPane;
+
+    @FXML
+    Pane imagePane;
+
+    @FXML
+    ImageView imageView;
+
 
     @FXML
     MenuItem openMenuItem;

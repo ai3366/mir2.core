@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.image.*?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import java.lang.*?>
 <?import javafx.scene.layout.*?>
@@ -30,6 +32,19 @@
                 </Menu>
               </menus>
             </MenuBar>
-         </top></BorderPane>
+         </top>
+         <left>
+            <FlowPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+               <padding>
+                  <Insets left="5.0" top="5.0" />
+               </padding>
+            </FlowPane>
+         </left>
+         <right>
+            <ImageView fx:id="imageView" fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true" BorderPane.alignment="CENTER" />
+         </right>
+         <center>
+            <Pane fx:id="imagePane" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+         </center></BorderPane>
    </children>
 </AnchorPane>
