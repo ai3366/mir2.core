@@ -28,6 +28,13 @@ import com.github.jootnet.mir2.core.Texture;
 public interface ImageLibrary extends Closeable {
 
 	/**
+	 * 获取图片库中图片数量
+	 * 
+	 * @return 图片数量
+	 */
+	int count();
+	
+	/**
 	 * 获取图片库中指定索引的图片数据
 	 * 
 	 * @param index

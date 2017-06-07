@@ -41,8 +41,6 @@ final class WIL implements ImageLibrary {
 	int getImageCount() {
 		return imageCount;
 	}
-	/* 色深度 */
-	private int colorCount;
 	/* 版本标识 */
     private int verFlag;
     /* 图片数据起始位置 */
@@ -97,7 +95,7 @@ final class WIL implements ImageLibrary {
 			offsetList[indexCount] = (int)br_wil.length();
 			br_wil.skipBytes(44); // 跳过标题
 			imageCount = br_wil.readIntLE(); // 图片数量
-			colorCount = SDK.colorCountToBitCount(br_wil.readIntLE()); // 色深度
+			int colorCount = SDK.colorCountToBitCount(br_wil.readIntLE()); // 色深度
 			if(colorCount < 16) {
 				// 8位灰度图可能版本标识不为0，此时操作不一样
 				br_wil.skipBytes(4); // 忽略调色板
@@ -108,6 +106,7 @@ final class WIL implements ImageLibrary {
             {
                 // 读取图片信息
                 ImageInfo ii = new ImageInfo();
+                ii.setColorBit((byte) colorCount);
                 br_wil.seek(offsetList[i]);
 				ii.setWidth((short)br_wil.readUnsignedShortLE());
 				ii.setHeight((short)br_wil.readUnsignedShortLE());
@@ -152,7 +151,7 @@ final class WIL implements ImageLibrary {
 				br_wil.readFully(pixels);
 	    	}
 	    	byte[] sRGB = new byte[ii.getWidth() * ii.getHeight() * 3];
-	    	if (colorCount == 8)
+	    	if (ii.getColorBit() == 8)
             {
                 int p_index = 0;
                 for (int h = ii.getHeight() - 1; h >= 0; --h)
@@ -168,7 +167,7 @@ final class WIL implements ImageLibrary {
     					sRGB[_idx + 2] = pallete[3];
                     }
             }
-	    	else if (colorCount == 16)
+	    	else if (ii.getColorBit() == 16)
             {
 	    		ByteBuffer bb = ByteBuffer.wrap(pixels);
 	    		bb.order(ByteOrder.LITTLE_ENDIAN);
@@ -201,5 +200,9 @@ final class WIL implements ImageLibrary {
 		if(index < 0) return ImageInfo.EMPTY;
 		if(index >= imageCount) return ImageInfo.EMPTY;
 		return imageInfos[index];
+	}
+
+	public int count() {
+		return imageCount;
 	}
 }

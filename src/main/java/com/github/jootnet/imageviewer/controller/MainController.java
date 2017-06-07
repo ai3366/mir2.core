@@ -73,7 +73,7 @@ public class MainController {
     private void loadTexture(ImageLibrary imageLibrary) {
         Pane imagePane = new Pane();
         int x = 0, y = 0;
-        for (int i = 0; i <= 100; i++) {
+        for (int i = 0; i < imageLibrary.count(); i++) {
             ImageView imageView = new ImageView();
             BufferedImage bufferedImage = imageLibrary.tex(i).toBufferedImage(false);
             imageView.setImage(SwingFXUtils.toFXImage(bufferedImage, null));

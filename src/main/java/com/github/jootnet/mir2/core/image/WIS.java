@@ -42,8 +42,6 @@ final class WIS implements ImageLibrary {
 	int getImageCount() {
 		return imageCount;
 	}
-	/* 色深度
-	private int colorCount = 8; */
     /* 图片数据起始位置 */
     private int[] offsetList;
     /* 图片数据长度 */
@@ -235,6 +233,10 @@ final class WIS implements ImageLibrary {
 		if(index < 0) return ImageInfo.EMPTY;
 		if(index >= imageCount) return ImageInfo.EMPTY;
 		return imageInfos[index];
+	}
+
+	public int count() {
+		return imageCount;
 	}
 
 }

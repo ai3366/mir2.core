@@ -260,17 +260,17 @@ public final class Texture implements Cloneable {
 		synchronized (proc_locker) {
 			BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
 			DataBufferByte dataBuffer = (DataBufferByte)bi.getRaster().getDataBuffer();
-			byte[][] _pixels = dataBuffer.getBankData();
+			byte[] _pixels = dataBuffer.getData();
 			for(int h = 0; h < height; ++h) {
 				for(int w = 0; w < width; ++w) {
 					byte _r = pixels[(w + h * width) * 3];
-					byte _g = pixels[(w + h * width) * 3];
-					byte _b = pixels[(w + h * width) * 3];
+					byte _g = pixels[(w + h * width) * 3 + 1];
+					byte _b = pixels[(w + h * width) * 3 + 2];
 					byte _a = _r == r && _g == g && _b == b ? 0 : (byte)255;
-					_pixels[w * h][0] = _a;
-					_pixels[w * h][1] = _b;
-					_pixels[w * h][2] = _g;
-					_pixels[w * h][3] = _r;
+					_pixels[(w + h * width) * 4] = _a;
+					_pixels[(w + h * width) * 4 + 1] = _b;
+					_pixels[(w + h * width) * 4 + 2] = _g;
+					_pixels[(w + h * width) * 4 + 3] = _r;
 				}
 			}
 			return bi;

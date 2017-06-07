@@ -31,6 +31,27 @@ public final class ImageInfo {
 	private short height;
 	private short offsetX;
 	private short offsetY;
+	private byte colorBit = 8;
+	
+	/**
+	 * 获取图片色深<br>
+	 * 可取值为
+	 * <ul>
+	 * <li>1:黑白两种颜色</li>
+	 * <li>8:256种颜色</li>
+	 * <li>16:65536种颜色</li>
+	 * <li>24:16777215种颜色</li>
+	 * <li>32:4294967295种颜色</li>
+	 * </ul>
+	 * 
+	 * @return
+	 */
+	public byte getColorBit() {
+		return colorBit;
+	}
+	void setColorBit(byte colorBit) {
+		this.colorBit = colorBit;
+	}
 	
 	/**
 	 * 获取图片宽度
