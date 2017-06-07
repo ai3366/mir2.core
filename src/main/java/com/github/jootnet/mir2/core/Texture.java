@@ -517,7 +517,8 @@ public final class Texture implements Cloneable {
 	 * 将一副目标图像混合到当前图像上<br>
 	 * 使用普通的图像叠加方式<br>
 	 * 即直接使用目标rgb作为新图片的rgb<br>
-	 * 如果需要使用Overlay方式，则使用{@link #blendAdd(Texture, Point, float)}方式
+	 * 如果需要使用Overlay方式，则使用{@link #blendAdd(Texture, Point, float)}方式<br>
+	 * 如果需要支持透明色，则使用{@link #blendNormalTransparent(Texture, Point, float, byte, byte, byte)}
 	 * 此操作不改变目标图像数据，即使传递了alpha参数
 	 * 
 	 * @param tar
@@ -528,6 +529,8 @@ public final class Texture implements Cloneable {
 	 * 		目标图像透明度
 	 * 
 	 * @see #blendAdd(Texture, Point, float)
+	 * @see #blendAddTransparent(Texture, Point, float, byte, byte, byte)
+	 * @see #blendNormalTransparent(Texture, Point, float, byte, byte, byte)
 	 */
 	public final void blendNormal(Texture tar, Point loc, float alpha) {
 		if(empty()) return;
@@ -557,9 +560,66 @@ public final class Texture implements Cloneable {
 	
 	/**
 	 * 将一副目标图像混合到当前图像上<br>
+	 * 使用普通的图像叠加方式<br>
+	 * 即直接使用目标rgb作为新图片的rgb<br>
+	 * 如果需要使用Overlay方式，则使用{@link #blendAddTransparent(Texture, Point, float, byte, byte, byte)}方式<br>
+	 * 此操作不改变目标图像数据，即使传递了alpha参数<br>
+	 * 支持透明色，即如果目标坐标目标图片的颜色是给定值则忽略
+	 * 
+	 * @param tar
+	 * 		目标图像
+	 * @param loc
+	 * 		图像叠加起始坐标
+	 * @param alpha
+	 * 		目标图像透明度
+	 * @param r
+	 * 		透明色R分量
+	 * @param g
+	 * 		透明色分量
+	 * @param b
+	 * 		透明色分量
+	 * 
+	 * @see #blendAdd(Texture, Point, float)
+	 * @see #blendAddTransparent(Texture, Point, float, byte, byte, byte)
+	 * @see #blendNormal(Texture, Point, float)
+	 */
+	public final void blendNormalTransparent(Texture tar, Point loc, float alpha, byte r, byte g, byte b) {
+		if(empty()) return;
+		if(tar.empty()) return;
+		synchronized (proc_locker) {
+			int x = loc.x;
+			int y = loc.y;
+			if(x < 0 || x > width || y < 0 || y < height) return;
+			int rx = x + tar.width;
+			if(rx >= width)
+				rx = width - 1;
+			int by = y + tar.height;
+			if(by >= height)
+				by = height - 1;
+			for(int i = y; i < by; ++i) {
+				for(int j = x; j < rx; ++j) {
+					int _idx_this = (j + i * width) * 3;
+					int _idx_that = (j - x + (i - y) * width) * 3;
+					byte _r = tar.pixels[_idx_that];
+					byte _g = tar.pixels[_idx_that + 1];
+					byte _b = tar.pixels[_idx_that + 2];
+					if(r != _r || _g != g || _b != b) {
+						pixels[_idx_this] = (byte) (_r * alpha);
+						pixels[_idx_this + 1] = (byte) (_g * alpha);
+						pixels[_idx_this + 2] = (byte) (_b * alpha);
+					}
+				}
+			}
+			dirty = true;
+		}
+	}
+	
+	/**
+	 * 将一副目标图像混合到当前图像上<br>
 	 * 使用Overlay的图像叠加方式<br>
 	 * 即显卡的Add混合模式，在OpenGL里是glBlendFunc(GL_SRC_COLOR, GL_ONE)<br>
-	 * 如果需要使用普通方式，则使用{@link #blendNormal(Texture, Point, float)}方式
+	 * 如果需要使用普通方式，则使用{@link #blendNormal(Texture, Point, float)}方式<br>
+	 * 如需支持透明色，则使用{@link #blendNormalTransparent(Texture, Point, float, byte, byte, byte)}
 	 * 此操作不改变目标图像数据，即使传递了alpha参数
 	 * 
 	 * @param tar
@@ -570,6 +630,8 @@ public final class Texture implements Cloneable {
 	 * 		目标图像透明度
 	 * 
 	 * @see #blendNormal(Texture, Point, float)
+	 * @see #blendNormalTransparent(Texture, Point, float, byte, byte, byte)
+	 * @see #blendAddTransparent(Texture, Point, float, byte, byte, byte)
 	 */
 	public final void blendAdd(Texture tar, Point loc, float alpha) {
 		if(empty()) return;
@@ -594,6 +656,62 @@ public final class Texture implements Cloneable {
 					pixels[_idx_this] = (byte) ((r < 128) ? (2 * pixels[_idx_this] * r / 255) : (255 - 2 * (255 - pixels[_idx_this]) * (255 - r) / 255));
 					pixels[_idx_this + 1] = (byte) ((g < 128) ? (2 * pixels[_idx_this + 1] * g / 255) : (255 - 2 * (255 - pixels[_idx_this + 1]) * (255 - g) / 255));
 					pixels[_idx_this + 2] = (byte) ((b < 128) ? (2 * pixels[_idx_this + 2] * b / 255) : (255 - 2 * (255 - pixels[_idx_this + 2]) * (255 - b) / 255));
+				}
+			}
+		}
+		dirty = true;
+	}
+	
+	/**
+	 * 将一副目标图像混合到当前图像上<br>
+	 * 使用Overlay的图像叠加方式<br>
+	 * 即显卡的Add混合模式，在OpenGL里是glBlendFunc(GL_SRC_COLOR, GL_ONE)<br>
+	 * 如果需要使用普通方式，则使用{@link #blendNormalTransparent(Texture, Point, float, byte, byte, byte)}方式<br>
+	 * 此操作不改变目标图像数据，即使传递了alpha参数<br>
+	 * 支持透明色，即如果目标坐标目标图片的颜色是给定值则忽略
+	 * 
+	 * @param tar
+	 * 		目标图像
+	 * @param loc
+	 * 		图像叠加起始坐标
+	 * @param alpha
+	 * 		目标图像透明度
+	 * @param r
+	 * 		透明色R分量
+	 * @param g
+	 * 		透明色分量
+	 * @param b
+	 * 		透明色分量
+	 * 
+	 * @see #blendNormal(Texture, Point, float)
+	 * @see #blendNormalTransparent(Texture, Point, float, byte, byte, byte)
+	 * @see #blendAdd(Texture, Point, float)
+	 */
+	public final void blendAddTransparent(Texture tar, Point loc, float alpha, byte r, byte g, byte b) {
+		if(empty()) return;
+		if(tar.empty()) return;
+		synchronized (proc_locker) {
+			int x = loc.x;
+			int y = loc.y;
+			if(x < 0 || x > width || y < 0 || y < height) return;
+			int rx = x + tar.width;
+			if(rx >= width)
+				rx = width - 1;
+			int by = y + tar.height;
+			if(by >= height)
+				by = height - 1;
+			for(int i = y; i < by; ++i) {
+				for(int j = x; j < rx; ++j) {
+					int _idx_this = (j + i * width) * 3;
+					int _idx_that = (j - x + (i - y) * width) * 3;
+					byte _r = (byte) (tar.pixels[_idx_that] * alpha);
+					byte _g = (byte) (tar.pixels[_idx_that + 1] * alpha);
+					byte _b = (byte) (tar.pixels[_idx_that + 2] * alpha);
+					if(r != _r || _g != g || _b != b) {
+						pixels[_idx_this] = (byte) ((_r < 128) ? (2 * pixels[_idx_this] * _r / 255) : (255 - 2 * (255 - pixels[_idx_this]) * (255 - _r) / 255));
+						pixels[_idx_this + 1] = (byte) ((_g < 128) ? (2 * pixels[_idx_this + 1] * _g / 255) : (255 - 2 * (255 - pixels[_idx_this + 1]) * (255 - _g) / 255));
+						pixels[_idx_this + 2] = (byte) ((_b < 128) ? (2 * pixels[_idx_this + 2] * _b / 255) : (255 - 2 * (255 - pixels[_idx_this + 2]) * (255 - _b) / 255));
+					}
 				}
 			}
 		}
