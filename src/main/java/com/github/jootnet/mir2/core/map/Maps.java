@@ -131,7 +131,7 @@ public final class Maps {
 				return ret;
 			}catch(Exception ex) {
 				ex.printStackTrace();
-				throw new RuntimeException(ex);
+				return null;
 			}
 		}
 	}

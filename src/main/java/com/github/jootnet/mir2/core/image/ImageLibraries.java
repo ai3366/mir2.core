@@ -46,50 +46,55 @@ public final class ImageLibraries {
 		synchronized (lib_locker) {
 			if(libraries.containsKey(libName))
 				return libraries.get(libName);
-			if(SDK.hasFileExtension(libPath)) {
-				String ext = SDK.getFileExtension(libPath);
-				if(ext.equals("WIL")) {
-					WIL wil = new WIL(libPath);
+			try{
+				if(SDK.hasFileExtension(libPath)) {
+					String ext = SDK.getFileExtension(libPath);
+					if(ext.equals("WIL")) {
+						WIL wil = new WIL(libPath);
+						if(wil.isLoaded()) {
+							libraries.put(libName, wil);
+							return wil;
+						}
+					}
+					if(ext.equals("WIS")) {
+						WIS wis = new WIS(libPath);
+						if(wis.isLoaded()) {
+							libraries.put(libName, wis);
+							return wis;
+						}
+					}
+					if(ext.equals("WZL")) {
+						WZL wzl = new WZL(libPath);
+						if(wzl.isLoaded()) {
+							libraries.put(libName, wzl);
+							return wzl;
+						}
+					}
+				} else {
+					String wzlPath = SDK.changeFileExtension(libPath, "wzl");
+					WZL wzl = new WZL(wzlPath);
+					if(wzl.isLoaded()) {
+						libraries.put(libName, wzl);
+						return wzl;
+					}
+					String wisPath = SDK.changeFileExtension(libPath, "wis");
+					WIS wis = new WIS(wisPath);
+					if(wis.isLoaded()) {
+						libraries.put(libName, wis);
+						return wis;
+					}
+					String wilPath = SDK.changeFileExtension(libPath, "wil");
+					WIL wil = new WIL(wilPath);
 					if(wil.isLoaded()) {
 						libraries.put(libName, wil);
 						return wil;
 					}
 				}
-				if(ext.equals("WIS")) {
-					WIS wis = new WIS(libPath);
-					if(wis.isLoaded()) {
-						libraries.put(libName, wis);
-						return wis;
-					}
-				}
-				if(ext.equals("WZL")) {
-					WZL wzl = new WZL(libPath);
-					if(wzl.isLoaded()) {
-						libraries.put(libName, wzl);
-						return wzl;
-					}
-				}
-			} else {
-				String wzlPath = SDK.changeFileExtension(libPath, "wzl");
-				WZL wzl = new WZL(wzlPath);
-				if(wzl.isLoaded()) {
-					libraries.put(libName, wzl);
-					return wzl;
-				}
-				String wisPath = SDK.changeFileExtension(libPath, "wis");
-				WIS wis = new WIS(wisPath);
-				if(wis.isLoaded()) {
-					libraries.put(libName, wis);
-					return wis;
-				}
-				String wilPath = SDK.changeFileExtension(libPath, "wil");
-				WIL wil = new WIL(wilPath);
-				if(wil.isLoaded()) {
-					libraries.put(libName, wil);
-					return wil;
-				}
+				return null;
+			}catch(RuntimeException ex) {
+				ex.printStackTrace();
+				return null;
 			}
-			return null;
 		}
 	}
 	
