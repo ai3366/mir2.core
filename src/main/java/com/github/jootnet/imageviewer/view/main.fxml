@@ -44,7 +44,11 @@
             <ImageView fx:id="imageView" fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true" BorderPane.alignment="CENTER" />
          </right>
          <center>
-            <Pane fx:id="imagePane" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+            <ScrollPane fx:id="scrollPane" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="200.0" prefWidth="200.0" />
+              </content>
+            </ScrollPane>
          </center></BorderPane>
    </children>
 </AnchorPane>

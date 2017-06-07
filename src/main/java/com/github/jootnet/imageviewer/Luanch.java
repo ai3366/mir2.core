@@ -9,6 +9,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
@@ -36,17 +37,17 @@ public class Luanch extends Application {
         primaryStage.setTitle(title);
         primaryStage.setResizable(false);
 
-        initListView(root);
+        //initListView(root);
 
         primaryStage.show();
 
     }
 
     public void initListView(Parent root) {
-        Pane imagePane = (Pane) root.lookup("#imagePane");
-
+        ScrollPane scrollPane = (ScrollPane) root.lookup("#imagePane");
+        Pane imagePane = new Pane();
         int x = 0, y = 0;
-        for (int i = 1; i <= 50; i++) {
+        for (int i = 1; i <= 100; i++) {
             ImageView imageView = new ImageView();
             imageView.setImage(new Image("http://e.hiphotos.baidu.com/zhidao/wh%3D450%2C600/sign=0197b59000087bf47db95fedc7e37b1a/38dbb6fd5266d016152614f3952bd40735fa3529.jpg"));
             imageView.setFitWidth(80);
@@ -61,7 +62,7 @@ public class Luanch extends Application {
                 x += 80;
             }
         }
-
+        scrollPane.setContent(imagePane);
     }
 
     public static void main(String[] args) {
