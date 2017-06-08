@@ -84,14 +84,11 @@ final class WIS implements ImageLibrary {
     		int readPosition = (int) (br_wis.length() - 12);
     		int currentOffset = 0;
     		int currentLength = 0;
-    		byte[] bytes = new byte[4];
     		do {
     			br_wis.seek(readPosition);
     			readPosition -= 12;
     			
-    			br_wis.read(bytes);
     			currentOffset = br_wis.readIntLE();
-    			br_wis.read(bytes);
     			currentLength = br_wis.readIntLE();
     			
     			offsets.add(currentOffset);
@@ -109,6 +106,12 @@ final class WIS implements ImageLibrary {
     		// 读取图片信息
     		imageInfos = new ImageInfo[imageCount];
     		for(int i = 0; i < imageCount; ++i) {
+				int offset = offsetList[i];
+				if(offset + 12 > br_wis.length()) {
+					// 数据出错，直接赋值为空图片
+					imageInfos[i] = ImageInfo.EMPTY;
+            		continue;
+				}
     			ImageInfo ii = new ImageInfo();
     			br_wis.seek(offsetList[i] + 4);
     			ii.setWidth((short)br_wis.readUnsignedShortLE());
@@ -184,14 +187,15 @@ final class WIS implements ImageLibrary {
 		if(!loaded) return Texture.EMPTY;
 		if(index < 0) return Texture.EMPTY;
 		if(index >= imageCount) return Texture.EMPTY;
+		if(imageInfos[index] == ImageInfo.EMPTY) return Texture.EMPTY;
     	try{
     		ImageInfo ii = imageInfos[index];
     		int offset = offsetList[index];
     		int length = lengthList[index];
-    		if(length < 14) {
+    		/*if(length < 14) {
     			// 如果是空白图片
     			return Texture.EMPTY;
-    		}
+    		}*/
     		byte[] imageBytes = new byte[ii.getWidth() * ii.getHeight()];
     		byte[] packed = null;
     		byte encry = 0;

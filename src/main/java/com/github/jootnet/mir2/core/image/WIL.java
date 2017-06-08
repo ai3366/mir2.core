@@ -102,12 +102,23 @@ final class WIL implements ImageLibrary {
 				verFlag = br_wil.readIntLE();
 			}
 			imageInfos = new ImageInfo[imageCount];
-			for (int i = 0; i < imageCount; ++i)
-            {
+			for (int i = 0; i < imageCount; ++i) {
+				int offset = offsetList[i];
+				if(offset + 9 > br_wil.length()) {
+					// 数据出错，直接赋值为空图片
+					imageInfos[i] = ImageInfo.EMPTY;
+            		continue;
+				}
+				int length = offsetList[i + 1] - offset - 8;
+				if(length < 2) {
+					// WIL中色彩数据为1个字节的是空图片，此时图片大小为1x1
+					imageInfos[i] = ImageInfo.EMPTY;
+            		continue;
+				}
                 // 读取图片信息
                 ImageInfo ii = new ImageInfo();
                 ii.setColorBit((byte) colorCount);
-                br_wil.seek(offsetList[i]);
+                br_wil.seek(offset);
 				ii.setWidth((short)br_wil.readUnsignedShortLE());
 				ii.setHeight((short)br_wil.readUnsignedShortLE());
 				ii.setOffsetX(br_wil.readShortLE());
@@ -140,15 +151,24 @@ final class WIL implements ImageLibrary {
 		if(!loaded) return Texture.EMPTY;
 		if(index < 0) return Texture.EMPTY;
 		if(index >= imageCount) return Texture.EMPTY;
+		if(imageInfos[index] == ImageInfo.EMPTY) return Texture.EMPTY;
     	try{
 	    	ImageInfo ii = imageInfos[index];
 	    	byte[] pixels = null;
 	    	synchronized(wil_locker) {
 	    		br_wil.seek(offsetList[index] + 8);
 	    		int pixelLength = offsetList[index + 1] - offsetList[index];
-                if (pixelLength < 13) return Texture.EMPTY;
-                pixels = new byte[pixelLength];
+                pixels = new byte[pixelLength - 8];
 				br_wil.readFully(pixels);
+				if(pixels.length == 1) {
+					// 空白图片
+					byte[] sRGB = new byte[3];
+					byte[] pallete = SDK.palletes[pixels[0] & 0xff];
+					sRGB[0] = pallete[1];
+					sRGB[1] = pallete[2];
+					sRGB[2] = pallete[3];
+					return new Texture(sRGB, 1, 1);
+				}
 	    	}
 	    	byte[] sRGB = new byte[ii.getWidth() * ii.getHeight() * 3];
 	    	if (ii.getColorBit() == 8)

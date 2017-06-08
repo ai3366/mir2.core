@@ -95,11 +95,21 @@ final class WZL implements ImageLibrary {
 			br_wzl = new BinaryReader(f_wzl, "r");
 			imageInfos = new ImageInfo[imageCount];
             lengthList = new int[imageCount];
-            for (int i = 0; i < imageCount; ++i)
-            {
+            for (int i = 0; i < imageCount; ++i) {
+            	int offset = offsetList[i];
+            	if(offset < 48) {
+            		// WZL里offset为0的是空图片
+					imageInfos[i] = ImageInfo.EMPTY;
+            		continue;
+            	}
+            	if(offset + 16 > br_wzl.length()) {
+					// 数据出错，直接赋值为空图片
+					imageInfos[i] = ImageInfo.EMPTY;
+            		continue;
+				}
                 // 读取图片信息和数据长度
                 ImageInfo ii = new ImageInfo();
-                br_wzl.seek(offsetList[i]);
+                br_wzl.seek(offset);
                 ii.setColorBit((byte) (br_wzl.readByte() == 5 ? 16 : 8));
                 br_wzl.skipBytes(3); // 跳过3字节未知数据
                 ii.setWidth((short)br_wzl.readUnsignedShortLE());
@@ -116,20 +126,16 @@ final class WZL implements ImageLibrary {
 		}
     }
 
-    /** 从zlib解压 */
-	private static byte[] unzip(byte[] ziped) {
+    /** 从zlib解压 
+     * @throws IOException */
+	private static byte[] unzip(byte[] ziped) throws IOException {
 		InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(ziped));
 		ByteArrayOutputStream o = new ByteArrayOutputStream(1024);
-		try {
-			int i = 1024;
-			byte[] buf = new byte[i];
+		int i = 1024;
+		byte[] buf = new byte[i];
 
-			while ((i = iis.read(buf, 0, i)) > 0) {
-				o.write(buf, 0, i);
-			}
-
-		} catch (IOException e) {
-			e.printStackTrace();
+		while ((i = iis.read(buf, 0, i)) > 0) {
+			o.write(buf, 0, i);
 		}
 		return o.toByteArray();
 	}
@@ -154,9 +160,10 @@ final class WZL implements ImageLibrary {
 		if(!loaded) return Texture.EMPTY;
 		if(index < 0) return Texture.EMPTY;
 		if(index >= imageCount) return Texture.EMPTY;
+		if(imageInfos[index] == ImageInfo.EMPTY) return Texture.EMPTY;
+		if(lengthList[index] == 0) return Texture.EMPTY;
     	try{
     		ImageInfo ii = imageInfos[index];
-    		if(ii.getWidth() == 0 && ii.getHeight() == 0) return Texture.EMPTY;
     		int offset = offsetList[index];
     		int length = lengthList[index];
     		byte[] pixels = new byte[length];

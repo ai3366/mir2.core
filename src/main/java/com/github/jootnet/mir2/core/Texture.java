@@ -37,14 +37,24 @@ import java.awt.image.WritableRaster;
  */
 public final class Texture implements Cloneable {
 
+	private static int EMPTY_COLOR_INDEX = 0;
 	/**
 	 * 空图片
 	 */
-	public static final Texture EMPTY = new Texture(null, 0, 0);
+	public static final Texture EMPTY = new Texture(new byte[]{SDK.palletes[EMPTY_COLOR_INDEX][1],SDK.palletes[EMPTY_COLOR_INDEX][2],SDK.palletes[EMPTY_COLOR_INDEX][3]}, 1, 1);
 	/**
 	 * 空BufferedImage图片
 	 */
-	public static final BufferedImage EMPTY_BUFFEREDIMAGE = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+	public static final BufferedImage EMPTY_BUFFEREDIMAGE;
+	
+	static {
+		EMPTY_BUFFEREDIMAGE = new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR);
+		byte[] cls = ((DataBufferByte)EMPTY_BUFFEREDIMAGE.getRaster().getDataBuffer()).getData();
+		cls[0] = SDK.palletes[EMPTY_COLOR_INDEX][0];
+		cls[1] = SDK.palletes[EMPTY_COLOR_INDEX][1];
+		cls[2] = SDK.palletes[EMPTY_COLOR_INDEX][2];
+		cls[3] = SDK.palletes[EMPTY_COLOR_INDEX][3];
+	}
 	
 	private byte[] pixels;
 	private int width;
