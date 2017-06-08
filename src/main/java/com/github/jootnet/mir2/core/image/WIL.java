@@ -32,6 +32,11 @@ import com.github.jootnet.mir2.core.Texture;
  */
 final class WIL implements ImageLibrary {
 
+	/**
+	 * 是否只用WIL中的数据解析图片，而不看WIX的内容
+	 */
+	public static boolean GLOBAL_ONLYWIL_MODE = true;
+	
 	private int imageCount;
 	/**
 	 * 获取库中图片数量
@@ -69,38 +74,86 @@ final class WIL implements ImageLibrary {
     private Object wil_locker = new Object();
     
     WIL(String wilPath) {
-    	String wixPath = SDK.changeFileExtension(wilPath, "wix");
-		File f_wix = new File(wixPath);
-		if(!f_wix.exists()) return;
-		if(!f_wix.isFile()) return;
-		if(!f_wix.canRead()) return;
 		File f_wil = new File(wilPath);
 		if(!f_wil.exists()) return;
 		if(!f_wil.isFile()) return;
 		if(!f_wil.canRead()) return;
     	try {
-    		BinaryReader br_wix = new BinaryReader(f_wix, "r");
+        	String wixPath = SDK.changeFileExtension(wilPath, "wix");
+        	boolean wilOnlyMode = false;
+    		File f_wix = new File(wixPath);
+    		if(GLOBAL_ONLYWIL_MODE || !f_wix.exists()) {
+    			wilOnlyMode = true;
+    		}
+    		if(!wilOnlyMode && !f_wix.isFile()) return;
+    		if(!wilOnlyMode && !f_wix.canRead()) return;
 			br_wil = new BinaryReader(f_wil, "r");
-			br_wix.skipBytes(44); // 跳过标题
-			int indexCount = br_wix.readIntLE(); // 索引数量(也是图片数量)
-			if(verFlag != 0)
-				br_wix.skipBytes(4); // 版本标识不为0需要跳过4字节
-			offsetList = new int[indexCount + 1];
-			for (int i = 0; i < indexCount; ++i)
-            {
-                // 读取数据偏移量
-				offsetList[i] = br_wix.readIntLE();
-            }
-			br_wix.close();
-			offsetList[indexCount] = (int)br_wil.length();
 			br_wil.skipBytes(44); // 跳过标题
 			imageCount = br_wil.readIntLE(); // 图片数量
+			offsetList = new int[imageCount + 1];
+			offsetList[imageCount] = (int)br_wil.length();
 			int colorCount = SDK.colorCountToBitCount(br_wil.readIntLE()); // 色深度
-			if(colorCount < 16) {
+			if(colorCount == 8) {
 				// 8位灰度图可能版本标识不为0，此时操作不一样
 				br_wil.skipBytes(4); // 忽略调色板
 				verFlag = br_wil.readIntLE();
 			}
+    		if(!wilOnlyMode) {
+	    		BinaryReader br_wix = new BinaryReader(f_wix, "r");
+				br_wix.skipBytes(44); // 跳过标题
+				int indexCount = br_wix.readIntLE(); // 索引数量(也是图片数量)
+				if(verFlag != 0)
+					br_wix.skipBytes(4); // 版本标识不为0需要跳过4字节
+				for (int i = 0; i < indexCount; ++i)
+	            {
+	                // 读取数据偏移量
+					offsetList[i] = br_wix.readIntLE();
+	            }
+				br_wix.close();
+    		} else {
+				imageInfos = new ImageInfo[imageCount];
+				int lastOffset = 1024 + 48 + 8;
+				for(int i = 0; i < imageCount; ++i) {
+					offsetList[i] = lastOffset;
+	    			if(colorCount == 8) {
+    					if(lastOffset + 9 > br_wil.length()) {
+    						// 数据出错，直接赋值为空图片
+    						imageInfos[i] = ImageInfo.EMPTY;
+    	            		continue;
+    					}
+	    			} else {
+    					if(lastOffset + 12 > br_wil.length()) {
+    						// 数据出错，直接赋值为空图片
+    						imageInfos[i] = ImageInfo.EMPTY;
+    	            		continue;
+    					}
+	    			}
+					br_wil.seek(lastOffset);
+					short w = (short)br_wil.readUnsignedShortLE();
+					short h = (short)br_wil.readUnsignedShortLE();
+	                lastOffset += 8;
+					if(w == 1 && h == 1) {
+						// WIL可能有空图片，此时图片大小为1x1
+		    			if(colorCount == 8) {
+							lastOffset += 1;
+		    			} else {
+							lastOffset += 4;
+		    			}
+						imageInfos[i] = ImageInfo.EMPTY;
+	            		continue;
+					}
+					ImageInfo ii = new ImageInfo();
+	                ii.setColorBit((byte) colorCount);
+	                ii.setWidth(w);
+	                ii.setHeight(h);
+					ii.setOffsetX(br_wil.readShortLE());
+					ii.setOffsetY(br_wil.readShortLE());
+	                imageInfos[i] = ii;
+	                lastOffset += SDK.widthBytes(colorCount * w) * h;
+				}
+				loaded = true;
+				return;
+    		}
 			imageInfos = new ImageInfo[imageCount];
 			for (int i = 0; i < imageCount; ++i) {
 				int offset = offsetList[i];
