@@ -30,7 +30,7 @@ public final class ImageInfo {
 	private short width;
 	private short height;
 	private short offsetX;
-	private short offsetY;
+	private short offsetY;	
 	private byte colorBit = 8;
 	
 	/**
