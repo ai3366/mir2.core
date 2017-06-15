@@ -16,14 +16,13 @@
  */
 package com.github.jootnet.mir2.core.image;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.Files;
+import java.util.Random;
 
 import com.github.jootnet.mir2.core.BinaryReader;
 import com.github.jootnet.mir2.core.BinaryWriter;
@@ -394,10 +393,8 @@ public final class WIL implements WriteableImageLibrary {
 		if(libName == null || libName.trim().isEmpty()) return null;
 		WIL wil = new WIL();
 		wil.libName = libName;
-		try {
-			wil.tmp_wil_dir = Files.createTempDirectory(null).toFile();
-		} catch (IOException e) {
-		}
+		wil.tmp_wil_dir = new File(new File(System.getProperty("java.io.tmpdir")).getAbsoluteFile() + File.separator + new Random().nextLong());
+		wil.tmp_wil_dir.mkdir();
 		return wil;
 	}
 
@@ -474,11 +471,12 @@ public final class WIL implements WriteableImageLibrary {
 	}
 
 	@Override
-	public synchronized void tex(int index, BufferedImage image, int colorBit, int offsetX, int offsetY) {
-		if(image == null) return;
+	public synchronized void tex(int index, byte[] rgbs, int colorBit, int width, int height, int offsetX, int offsetY) {
+		if(rgbs == null || rgbs.length != width * height * 3) return;
 		try{
 			if(tmp_wil_dir == null) {
-				tmp_wil_dir = Files.createTempDirectory(null).toFile();
+				tmp_wil_dir = new File(new File(System.getProperty("java.io.tmpdir")).getAbsoluteFile() + File.separator + new Random().nextLong());
+				tmp_wil_dir.mkdir();
 				File flib = new File(tmp_wil_dir.getAbsolutePath() + File.separator + "lib");
 				FileOutputStream fos = new FileOutputStream(flib);
 				br_wil.seek(0);
@@ -503,35 +501,34 @@ public final class WIL implements WriteableImageLibrary {
 					imageInfos[i] = new ImageInfo();
 			}
 			imageInfos[index].setColorBit((byte)bitCount);
-			imageInfos[index].setWidth((short) image.getWidth());
-			imageInfos[index].setHeight((short) image.getHeight());
+			imageInfos[index].setWidth((short) width);
+			imageInfos[index].setHeight((short) height);
 			imageInfos[index].setOffsetX((short) offsetX);
 			imageInfos[index].setOffsetY((short) offsetY);
 			File fimg = new File(tmp_wil_dir.getAbsolutePath() + File.separator + index);
 			FileOutputStream fosimg = new FileOutputStream(fimg);
-			int skipBytes = SDK.skipBytes(bitCount, image.getWidth());
-			for (int h = image.getHeight() - 1; h >= 0; --h) {
-                for (int w = 0; w < image.getWidth(); ++w) {
+			int skipBytes = SDK.skipBytes(bitCount, width);
+			for (int h = height - 1; h >= 0; --h) {
+                for (int w = 0; w < width; ++w) {
                     // 跳过填充字节
                     if (w == 0)
                         for(int i = 0; i < skipBytes; ++i)
                         	fosimg.write(0);
-                    int rgb = image.getRGB(w, h);
+                    byte r = rgbs[(w + h * width) * 3];
+                    byte g = rgbs[(w + h * width) * 3 + 1];
+                    byte b = rgbs[(w + h * width) * 3 + 2];
                     if(bitCount == 8) {
-	                    if(rgb == 0xff000000)
+	                    if(r == g && g == b && b == 0)
 	                    	fosimg.write(0);
 	                    else {
-		                    for(int i = 0; i < SDK.palletesInt.length; ++i) {
-		                    	if(rgb == SDK.palletesInt[i]) {
+		                    for(int i = 0; i < SDK.palletes.length; ++i) {
+		                    	if(r == SDK.palletes[i][0] && g == SDK.palletes[i][1] && b == SDK.palletes[i][2]) {
 		                    		fosimg.write(i);
 		                    		break;
 		                    	}
 		                    }
 	                    }
                     } else if(bitCount == 16) {
-                    	byte r = (byte) ((rgb >> 16) & 0xff);
-                    	byte g = (byte) ((rgb >> 8) & 0xff);
-                    	byte b = (byte) (rgb & 0xff);
                     	byte right = (byte) ((((r & 0x1f) << 10) | ((g & 0x38) << 5)) >> 8);
                     	byte left = (byte) (((g & 0x7) << 5) | (b & 0x3f));
                     	fosimg.write(left);

@@ -16,22 +16,11 @@
  */
 package com.github.jootnet.mir2.core;
 
-import java.awt.Point;
-import java.awt.Transparency;
-import java.awt.color.ColorSpace;
-import java.awt.image.BufferedImage;
-import java.awt.image.ComponentColorModel;
-import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferByte;
-import java.awt.image.Raster;
-import java.awt.image.WritableRaster;
-
 /**
  * 热血传奇图片数据<br>
  * 使用三字节sRGB方式存放色彩数据<br>
  * 图片不支持透明色，背景为黑色<br>
- * 使用双缓冲加速图像处理<br>
- * 此图片与{@link BufferedImage}相互转换
+ * 使用双缓冲加速图像处理
  * 
  * @author johness
  */
@@ -42,19 +31,6 @@ public final class Texture implements Cloneable {
 	 * 空图片
 	 */
 	public static final Texture EMPTY = new Texture(new byte[]{SDK.palletes[EMPTY_COLOR_INDEX][1],SDK.palletes[EMPTY_COLOR_INDEX][2],SDK.palletes[EMPTY_COLOR_INDEX][3]}, 1, 1);
-	/**
-	 * 空BufferedImage图片
-	 */
-	public static final BufferedImage EMPTY_BUFFEREDIMAGE;
-	
-	static {
-		EMPTY_BUFFEREDIMAGE = new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR);
-		byte[] cls = ((DataBufferByte)EMPTY_BUFFEREDIMAGE.getRaster().getDataBuffer()).getData();
-		cls[0] = SDK.palletes[EMPTY_COLOR_INDEX][0];
-		cls[1] = SDK.palletes[EMPTY_COLOR_INDEX][1];
-		cls[2] = SDK.palletes[EMPTY_COLOR_INDEX][2];
-		cls[3] = SDK.palletes[EMPTY_COLOR_INDEX][3];
-	}
 	
 	private byte[] pixels;
 	private int width;
@@ -66,6 +42,59 @@ public final class Texture implements Cloneable {
 	private static long clearCount;
 	private static Object clear_locker = new Object();
 	private Object proc_locker = new Object();
+	
+	/**
+	 * 获取图片宽度
+	 * 
+	 * @return
+	 * 		图片宽度(像素)
+	 */
+	public int getWidth() {
+		return width;
+	}
+	
+	/**
+	 * 获取图片高度
+	 * 
+	 * @return
+	 * 		图片高度(像素)
+	 */
+	public int getHeight() {
+		return height;
+	}
+	
+	/**
+	 * 获取图片色彩数据<br>
+	 * 每一个像素点以R G B三个byte的分量存储<br>
+	 * 即返回的数据长度为图片宽度*图片高度*3大小<br>
+	 * 从图片左上角到右下角
+	 * 
+	 * @return
+	 * 		图片全部颜色数据
+	 */
+	public byte[] getRGBs() {
+		return pixels;
+	}
+	
+	/**
+	 * 获取图片特定点色彩数据
+	 * 
+	 * @param x
+	 * 		横坐标(像素)
+	 * @param y
+	 * 		纵坐标(像素)
+	 * @return
+	 * 		特定点色彩数据，三个字节依次表示RGB分量
+	 */
+	public byte[] getRGB(int x, int y) {
+		if(x > width - 1 || y > height - 1) return new byte[]{0,0,0};
+		int _idx = (x + y * width) * 3;
+		byte[] ret = new byte[3];
+		ret[0] = pixels[_idx];
+		ret[1] = pixels[_idx + 1];
+		ret[2] = pixels[_idx + 2];
+		return ret;
+	}
 	
 	/**
 	 * 从RGB字节数组创建图片数据
@@ -119,11 +148,9 @@ public final class Texture implements Cloneable {
 	
 	/**
 	 * 判断当前图片是否被修改过<br>
-	 * 当前函数返回之后，图片会被置为未修改，即下次调用会返回false<br>
-	 * 一般与{@link #toBufferedImage(boolean)}配合使用，判定时机
+	 * 当前函数返回之后，图片会被置为未修改，即下次调用会返回false
 	 * 
 	 * @return 上次调用此函数之后图片是否被修改过
-	 * @see #toBufferedImage(boolean)
 	 */
 	public final boolean dirty() {
 		synchronized (proc_locker) {
@@ -203,87 +230,6 @@ public final class Texture implements Cloneable {
 				}
 			}
 			return new Texture(npixels, rx -x, by -y);
-		}
-	}
-	
-	/**
-	 * 将图片数据转换为{@link BufferedImage}对象<br>
-	 * 默认不支持Alpha通道，因为从图像算法角度讲是没有“透明色”概念的，只有在两张图片叠加时才有意义<br>
-	 * 如果需要在图片中将特定颜色置为透明，则使用{@link #toBufferedImageTransparent(byte, byte, byte)}
-	 * 
-	 * @param disaposable
-	 * 		结果是否是一次性的<br>
-	 * 		当此值只为false时返回结果中的BufferedImage中图片数据是与当前对象使用同一个字节数组<br>
-	 * 		对当前对象的任何操作都会影响到函数返回的图片展示，甚至可能在多线程中出现图片撕裂<br>
-	 * 		因此，除非你认为自己头脑是清晰的，否则请传递true<br>
-	 * 		理论上，传递false的函数调用，调用一次和多次效果都是一样的，传递true的调用则需要通过{@link #dirty()}进行时机判断
-	 * 
-	 * @return 图片数据对应的{@link BufferedImage}对象
-	 * 
-	 * @see #toBufferedImageTransparent(byte, byte, byte)
-	 * @see #dirty()
-	 * @see DataBufferByte
-	 */
-	public final BufferedImage toBufferedImage(boolean disaposable) {
-		if(empty())
-			return EMPTY_BUFFEREDIMAGE;
-		synchronized (proc_locker) {
-			byte[] _pixels = null;
-			if(!disaposable) {
-				_pixels = pixels;
-			} else {
-				_pixels = new byte[pixels.length];
-				System.arraycopy(pixels, 0, _pixels, 0, pixels.length);
-			}
-			// 将byte[]转为DataBufferByte用于后续创建BufferedImage对象
-	        DataBufferByte dataBuffer = new DataBufferByte(_pixels, pixels.length);
-	        // sRGB色彩空间对象
-	        ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-	        int[] nBits = {8, 8, 8};
-	        int[] bOffs = {0, 1, 2};
-	        ComponentColorModel colorModel = new ComponentColorModel(cs, nBits, false, false,
-	                                             Transparency.OPAQUE,
-	                                             DataBuffer.TYPE_BYTE);        
-	        WritableRaster raster = Raster.createInterleavedRaster(dataBuffer, width, height, width*3, 3, bOffs, null);
-	        return new BufferedImage(colorModel,raster,false,null);
-		}
-	}
-	
-	/**
-	 * 将图片数据转换为{@link BufferedImage}对象<br>
-	 * 如果不需要设置透明色，则使用{@link #toBufferedImage(boolean)}<br>
-	 * 此函数不会将返回值存入缓存，是一次性的
-	 * 
-	 * @param r
-	 * 		透明色R分量
-	 * @param g
-	 * 		透明色G分量
-	 * @param b
-	 * 		透明色B分量
-	 * @return 将指定颜色置为透明色的BufferedImage
-	 * 
-	 * @see #toBufferedImage(boolean)
-	 */
-	public final BufferedImage toBufferedImageTransparent(byte r, byte g, byte b) {
-		if(empty())
-			return EMPTY_BUFFEREDIMAGE;
-		synchronized (proc_locker) {
-			BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
-			DataBufferByte dataBuffer = (DataBufferByte)bi.getRaster().getDataBuffer();
-			byte[] _pixels = dataBuffer.getData();
-			for(int h = 0; h < height; ++h) {
-				for(int w = 0; w < width; ++w) {
-					byte _r = pixels[(w + h * width) * 3];
-					byte _g = pixels[(w + h * width) * 3 + 1];
-					byte _b = pixels[(w + h * width) * 3 + 2];
-					byte _a = _r == r && _g == g && _b == b ? 0 : (byte)255;
-					_pixels[(w + h * width) * 4] = _a;
-					_pixels[(w + h * width) * 4 + 1] = _b;
-					_pixels[(w + h * width) * 4 + 2] = _g;
-					_pixels[(w + h * width) * 4 + 3] = _r;
-				}
-			}
-			return bi;
 		}
 	}
 	
@@ -527,27 +473,29 @@ public final class Texture implements Cloneable {
 	 * 将一副目标图像混合到当前图像上<br>
 	 * 使用普通的图像叠加方式<br>
 	 * 即直接使用目标rgb作为新图片的rgb<br>
-	 * 如果需要使用Overlay方式，则使用{@link #blendAdd(Texture, Point, float)}方式<br>
-	 * 如果需要支持透明色，则使用{@link #blendNormalTransparent(Texture, Point, float, byte, byte, byte)}
+	 * 如果需要使用Overlay方式，则使用{@link #blendAdd(Texture, int, int, float)}方式<br>
+	 * 如果需要支持透明色，则使用{@link #blendNormalTransparent(Texture, int, int, float, byte, byte, byte)}
 	 * 此操作不改变目标图像数据，即使传递了alpha参数
 	 * 
 	 * @param tar
 	 * 		目标图像
-	 * @param loc
-	 * 		图像叠加起始坐标
+	 * @param locx
+	 * 		图像叠加起始X坐标
+	 * @param locy
+	 * 		图像叠加起始Y坐标
 	 * @param alpha
 	 * 		目标图像透明度
 	 * 
-	 * @see #blendAdd(Texture, Point, float)
-	 * @see #blendAddTransparent(Texture, Point, float, byte, byte, byte)
-	 * @see #blendNormalTransparent(Texture, Point, float, byte, byte, byte)
+	 * @see #blendAdd(Texture, int, int, float)
+	 * @see #blendAddTransparent(Texture, int, int, float, byte, byte, byte)
+	 * @see #blendNormalTransparent(Texture, int, int, float, byte, byte, byte)
 	 */
-	public final void blendNormal(Texture tar, Point loc, float alpha) {
+	public final void blendNormal(Texture tar, int locx, int locy, float alpha) {
 		if(empty()) return;
 		if(tar.empty()) return;
 		synchronized (proc_locker) {
-			int x = loc.x;
-			int y = loc.y;
+			int x = locx;
+			int y = locy;
 			if(x < 0 || x > width || y < 0 || y < height) return;
 			int rx = x + tar.width;
 			if(rx >= width)
@@ -572,14 +520,16 @@ public final class Texture implements Cloneable {
 	 * 将一副目标图像混合到当前图像上<br>
 	 * 使用普通的图像叠加方式<br>
 	 * 即直接使用目标rgb作为新图片的rgb<br>
-	 * 如果需要使用Overlay方式，则使用{@link #blendAddTransparent(Texture, Point, float, byte, byte, byte)}方式<br>
+	 * 如果需要使用Overlay方式，则使用{@link #blendAddTransparent(Texture, int, int, float, byte, byte, byte)}方式<br>
 	 * 此操作不改变目标图像数据，即使传递了alpha参数<br>
 	 * 支持透明色，即如果目标坐标目标图片的颜色是给定值则忽略
 	 * 
 	 * @param tar
 	 * 		目标图像
-	 * @param loc
-	 * 		图像叠加起始坐标
+	 * @param locx
+	 * 		图像叠加起始X坐标
+	 * @param locy
+	 * 		图像叠加起始Y坐标
 	 * @param alpha
 	 * 		目标图像透明度
 	 * @param r
@@ -589,16 +539,16 @@ public final class Texture implements Cloneable {
 	 * @param b
 	 * 		透明色分量
 	 * 
-	 * @see #blendAdd(Texture, Point, float)
-	 * @see #blendAddTransparent(Texture, Point, float, byte, byte, byte)
-	 * @see #blendNormal(Texture, Point, float)
+	 * @see #blendAdd(Texture, int, int, float)
+	 * @see #blendAddTransparent(Texture, int, int, float, byte, byte, byte)
+	 * @see #blendNormal(Texture, int, int, float)
 	 */
-	public final void blendNormalTransparent(Texture tar, Point loc, float alpha, byte r, byte g, byte b) {
+	public final void blendNormalTransparent(Texture tar, int locx, int locy, float alpha, byte r, byte g, byte b) {
 		if(empty()) return;
 		if(tar.empty()) return;
 		synchronized (proc_locker) {
-			int x = loc.x;
-			int y = loc.y;
+			int x = locx;
+			int y = locy;
 			if(x < 0 || x > width || y < 0 || y < height) return;
 			int rx = x + tar.width;
 			if(rx >= width)
@@ -628,27 +578,29 @@ public final class Texture implements Cloneable {
 	 * 将一副目标图像混合到当前图像上<br>
 	 * 使用Overlay的图像叠加方式<br>
 	 * 即显卡的Add混合模式，在OpenGL里是glBlendFunc(GL_SRC_COLOR, GL_ONE)<br>
-	 * 如果需要使用普通方式，则使用{@link #blendNormal(Texture, Point, float)}方式<br>
-	 * 如需支持透明色，则使用{@link #blendNormalTransparent(Texture, Point, float, byte, byte, byte)}
+	 * 如果需要使用普通方式，则使用{@link #blendNormal(Texture, int, int, float)}方式<br>
+	 * 如需支持透明色，则使用{@link #blendNormalTransparent(Texture, int, int, float, byte, byte, byte)}
 	 * 此操作不改变目标图像数据，即使传递了alpha参数
 	 * 
 	 * @param tar
 	 * 		目标图像
-	 * @param loc
-	 * 		图像叠加起始坐标
+	 * @param locx
+	 * 		图像叠加起始X坐标
+	 * @param locy
+	 * 		图像叠加起始Y坐标
 	 * @param alpha
 	 * 		目标图像透明度
 	 * 
-	 * @see #blendNormal(Texture, Point, float)
-	 * @see #blendNormalTransparent(Texture, Point, float, byte, byte, byte)
-	 * @see #blendAddTransparent(Texture, Point, float, byte, byte, byte)
+	 * @see #blendNormal(Texture, int, int, float)
+	 * @see #blendNormalTransparent(Texture, int, int, float, byte, byte, byte)
+	 * @see #blendAddTransparent(Texture, int, int, float, byte, byte, byte)
 	 */
-	public final void blendAdd(Texture tar, Point loc, float alpha) {
+	public final void blendAdd(Texture tar, int locx, int locy, float alpha) {
 		if(empty()) return;
 		if(tar.empty()) return;
 		synchronized (proc_locker) {
-			int x = loc.x;
-			int y = loc.y;
+			int x = locx;
+			int y = locy;
 			if(x < 0 || x > width || y < 0 || y < height) return;
 			int rx = x + tar.width;
 			if(rx >= width)
@@ -676,14 +628,16 @@ public final class Texture implements Cloneable {
 	 * 将一副目标图像混合到当前图像上<br>
 	 * 使用Overlay的图像叠加方式<br>
 	 * 即显卡的Add混合模式，在OpenGL里是glBlendFunc(GL_SRC_COLOR, GL_ONE)<br>
-	 * 如果需要使用普通方式，则使用{@link #blendNormalTransparent(Texture, Point, float, byte, byte, byte)}方式<br>
+	 * 如果需要使用普通方式，则使用{@link #blendNormalTransparent(Texture, int, int, float, byte, byte, byte)}方式<br>
 	 * 此操作不改变目标图像数据，即使传递了alpha参数<br>
 	 * 支持透明色，即如果目标坐标目标图片的颜色是给定值则忽略
 	 * 
 	 * @param tar
 	 * 		目标图像
-	 * @param loc
-	 * 		图像叠加起始坐标
+	 * @param locx
+	 * 		图像叠加起始X坐标
+	 * @param locy
+	 * 		图像叠加起始Y坐标
 	 * @param alpha
 	 * 		目标图像透明度
 	 * @param r
@@ -693,16 +647,16 @@ public final class Texture implements Cloneable {
 	 * @param b
 	 * 		透明色分量
 	 * 
-	 * @see #blendNormal(Texture, Point, float)
-	 * @see #blendNormalTransparent(Texture, Point, float, byte, byte, byte)
-	 * @see #blendAdd(Texture, Point, float)
+	 * @see #blendNormal(Texture, int, int, float)
+	 * @see #blendNormalTransparent(Texture, int, int, float, byte, byte, byte)
+	 * @see #blendAdd(Texture, int, int, float)
 	 */
-	public final void blendAddTransparent(Texture tar, Point loc, float alpha, byte r, byte g, byte b) {
+	public final void blendAddTransparent(Texture tar, int locx, int locy, float alpha, byte r, byte g, byte b) {
 		if(empty()) return;
 		if(tar.empty()) return;
 		synchronized (proc_locker) {
-			int x = loc.x;
-			int y = loc.y;
+			int x = locx;
+			int y = locy;
 			if(x < 0 || x > width || y < 0 || y < height) return;
 			int rx = x + tar.width;
 			if(rx >= width)

@@ -16,8 +16,6 @@
  */
 package com.github.jootnet.mir2.core.image;
 
-import java.awt.image.BufferedImage;
-
 /**
  * 可写图片库接口<br>
  * 用于ImageViewer中的新建/编辑操作或微端中的同步功能
@@ -40,17 +38,21 @@ public interface WriteableImageLibrary extends ImageLibrary {
 	 * 
 	 * @param index
 	 * 		图片索引
-	 * @param image
-	 * 		图片对象
+	 * @param rgbs
+	 * 		图片色彩数据
 	 * @param colorBit
 	 * 		图片色彩位数，取值为8或16<br>
 	 * 		如果图片不是8位或16位BMP，则可能损失精度
+	 * @param width
+	 * 		图片宽度
+	 * @param height
+	 * 		图片高度
 	 * @param offsetX
 	 * 		图片横向偏移
 	 * @param offsetY
 	 * 		图片纵向偏移
 	 */
-	void tex(int index, BufferedImage image, int colorBit, int offsetX, int offsetY);
+	void tex(int index, byte[] rgbs, int colorBit, int width, int height, int offsetX, int offsetY);
 	
 	/**
 	 * 删除特定索引的图片<br>
