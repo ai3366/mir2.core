@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * Support: https://jootnet.github.io
+ * Support: https://github.com/jootnet/mir2.core
  */
 package com.github.jootnet.mir2.core.image;
 
@@ -144,8 +144,8 @@ final class WIS implements ImageLibrary {
 		// XX YY 表示以YY填充XX个字节
 		// 00 XX YY ZZ ... 表示从YY开始XX个字节是未被压缩的，直接复制出来即可
 		while(srcLength > 0 && unpackLength > 0) {
-			int length = packed[srcIndex++] & 0xff; // 取出第一个标志位
-			int value = packed[srcIndex++] & 0xff; // 取出第二个标志位
+			int length = packed[srcIndex++]; // 取出第一个标志位
+			int value = packed[srcIndex++]; // 取出第二个标志位
 			srcLength -= 2;
 			/*if(value == 0 && length == 0) {
 				// 脏数据

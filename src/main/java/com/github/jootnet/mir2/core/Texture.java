@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * Support: https://jootnet.github.io
+ * Support: https://github.com/jootnet/mir2.core
  */
 package com.github.jootnet.mir2.core;
 
