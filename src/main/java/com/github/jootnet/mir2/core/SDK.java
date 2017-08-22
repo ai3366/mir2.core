@@ -19,7 +19,7 @@ package com.github.jootnet.mir2.core;
 /**
  * SDK基础函数与常亮
  * 
- * @author johness
+ * @author 云中双月
  */
 public final class SDK {
 

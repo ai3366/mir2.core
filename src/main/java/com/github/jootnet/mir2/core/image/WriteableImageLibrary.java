@@ -20,7 +20,7 @@ package com.github.jootnet.mir2.core.image;
  * 可写图片库接口<br>
  * 用于ImageViewer中的新建/编辑操作或微端中的同步功能
  * 
- * @author johness
+ * @author 云中双月
  */
 public interface WriteableImageLibrary extends ImageLibrary {
 

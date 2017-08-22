@@ -19,7 +19,7 @@ package com.github.jootnet.mir2.core.image;
 /**
  * 热血传奇2图片信息
  * 
- * @author johness
+ * @author 云中双月
  */
 public final class ImageInfo {
 

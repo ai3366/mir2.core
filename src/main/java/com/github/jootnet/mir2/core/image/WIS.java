@@ -29,7 +29,7 @@ import com.github.jootnet.mir2.core.Texture;
 /**
  * 热血传奇2WIS图片库
  * 
- * @author johness
+ * @author 云中双月
  */
 final class WIS implements ImageLibrary {
 

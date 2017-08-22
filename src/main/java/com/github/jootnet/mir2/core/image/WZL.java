@@ -31,7 +31,7 @@ import com.github.jootnet.mir2.core.Texture;
 /**
  * 热血传奇2WZL图片库
  * 
- * @author johness
+ * @author 云中双月
  */
 final class WZL implements ImageLibrary {
 

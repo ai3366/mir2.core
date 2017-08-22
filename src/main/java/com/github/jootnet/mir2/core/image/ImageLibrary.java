@@ -23,7 +23,7 @@ import com.github.jootnet.mir2.core.Texture;
 /**
  * 图片库通用接口
  * 
- * @author johness
+ * @author 云中双月
  */
 public interface ImageLibrary extends Closeable {
 

@@ -27,7 +27,7 @@ package com.github.jootnet.mir2.core.map;
  * <br>
  * 而是将MapHeader中关键地图信息提取出来放到Map里，将MapTile重新解析为{@link MapTileInfo}以方便程序逻辑
  * 
- * @author johness
+ * @author 云中双月
  */
 public final class Map {
 	

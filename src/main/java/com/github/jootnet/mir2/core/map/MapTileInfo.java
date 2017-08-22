@@ -19,7 +19,7 @@ package com.github.jootnet.mir2.core.map;
 /**
  * MapTile方便程序逻辑的另类解读方式
  * 
- * @author johness
+ * @author 云中双月
  */
 public final class MapTileInfo {
 

@@ -24,7 +24,7 @@ import com.github.jootnet.mir2.core.SDK;
 /**
  * 图片库管理工具类
  * 
- * @author johness
+ * @author 云中双月
  */
 public final class ImageLibraries {
 

@@ -37,7 +37,7 @@ import com.github.jootnet.mir2.core.BinaryReader;
  * 十周年之后的版本可能出现新版本地图，3KM2中式20110428加入的对新版地图的支持<br>
  * 不过除了问陈天桥之外暂时不能知道新版地图中最后两个字节是干嘛用的
  * 
- * @author johness
+ * @author 云中双月
  */
 public final class Maps {
 

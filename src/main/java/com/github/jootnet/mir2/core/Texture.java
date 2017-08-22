@@ -22,7 +22,7 @@ package com.github.jootnet.mir2.core;
  * 图片不支持透明色，背景为黑色<br>
  * 使用双缓冲加速图像处理
  * 
- * @author johness
+ * @author 云中双月
  */
 public final class Texture implements Cloneable {
 

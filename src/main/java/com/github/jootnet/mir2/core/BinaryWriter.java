@@ -26,7 +26,7 @@ import java.io.RandomAccessFile;
  * <br>
  * 此类继承{@link RandomAccessFile}，添加一系列以<b>LE</b>结尾的函数将读取的字节以<b>Little-Endian</b>格式写入
  *
- * @author johness
+ * @author 云中双月
  */
 public class BinaryWriter extends RandomAccessFile {
 
