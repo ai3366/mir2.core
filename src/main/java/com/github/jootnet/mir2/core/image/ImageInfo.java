@@ -44,7 +44,7 @@ public final class ImageInfo {
 	 * <li>32:4294967295种颜色</li>
 	 * </ul>
 	 * 
-	 * @return
+	 * @return 图片色深度
 	 */
 	public byte getColorBit() {
 		return colorBit;

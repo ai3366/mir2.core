@@ -81,7 +81,7 @@ public interface WriteableImageLibrary extends ImageLibrary {
 	 * @param offsetY
 	 * 		图片纵向偏移
 	 * 
-	 * @see #tex(int, int, byte[], int, int, int, int)
+	 * @see #tex(int, int[], byte[], int, int, int, int)
 	 */
 	void tex(int index, byte[][] pallete, byte[] rgb8s, int width, int height, int offsetX, int offsetY);
 	
